@@ -1,4 +1,4 @@
-/* ChatGPT Virtual DOM - viewport build  (auto-toggle & live check) */
+/* ChatGPT Virtual DOM - viewport build  (auto-toggle, live check & hover count) */
 
 (() => {
 
@@ -12,12 +12,12 @@ const VERBOSE    = false;
 /* ============================================================== */
 
 /* === prefs keys + defaults =================================== */
-const K_ENABLED   = "virtualEnabled";      // null → auto, true / false
+const K_ENABLED   = "virtualEnabled";      // null -> auto, true / false
 const K_AUTO      = "virtualAuto";         // default true
-const K_THRESHOLD = "virtualThreshold";    // default 120
+const K_THRESHOLD = "virtualThreshold";    // default 100
 
 const DEF_AUTO      = true;
-const DEF_THRESHOLD = 120;
+const DEF_THRESHOLD = 100;
 /* ============================================================== */
 
 const tag = "%cvirtual-dom";
@@ -41,7 +41,7 @@ const cache   = new Map();     // id -> {html,height}
 const detachQ = [];
 let flushing  = false;
 
-let spin, toggleBtnEl;
+let spin, toggleBtnEl, settingsBtnEl;
 
 /* ---------- spinner ----------------------------------------- */
 function addSpinner(){
@@ -103,9 +103,14 @@ function flush(){
 
 /* ---------- auto-toggle helper ------------------------------- */
 function maybeAutoEnable(msgCountOverride=null){
-  if(enabled) return;                 // already on
-  if(!autoMode) return;               // user disabled auto
+  if(enabled) return;
+  if(!autoMode) return;
   const total = msgCountOverride ?? document.querySelectorAll(MSG_SEL).length;
+  const hasMsgs = total > 0;
+
+  toggleBtnEl.style.display = hasMsgs ? "block" : "none";
+  settingsBtnEl.style.display = hasMsgs ? "block" : "none";
+
   if(total >= threshold){
     enabled = true;
     chrome.storage.sync.set({[K_ENABLED]: true});
@@ -119,13 +124,10 @@ function maybeAutoEnable(msgCountOverride=null){
 /* ---------- viewport refresh -------------------------------- */
 const refresh = rafDebounce(()=>{
   if(document.hidden){ return; }
-
-  /* re-check auto when not enabled */
   if(!enabled){ maybeAutoEnable(); reviveAll(); hide(); return; }
 
   const turns=[...document.querySelectorAll(MSG_SEL)];
   if(!turns.length) return;
-
   let first=-1,last=-1,h=innerHeight;
   for(let i=0;i<turns.length;i++){
     const r=turns[i].getBoundingClientRect();
@@ -133,17 +135,13 @@ const refresh = rafDebounce(()=>{
     if(r.top<=h) last=i;
   }
   if(first===-1) return;
-
   const keepF=Math.max(0,first-WIN_BEFORE);
   const keepT=Math.min(turns.length-1,last+WIN_AFTER);
 
-  /* pass 1: revive everything in keep range */
   for(let i=keepF;i<=keepT;i++){
     const n=turns[i];
     if(n.hasAttribute("data-placeholder-id")) revive(n);
   }
-
-  /* pass 2: enqueue stashes outside keep */
   for(let i=0;i<turns.length;i++){
     if(i>=keepF && i<=keepT) continue;
     const n=turns[i];
@@ -169,7 +167,7 @@ function attachHeavyObservers(){
   scroller.addEventListener("scroll",refresh,{passive:true});
   heavyMO=new MutationObserver(muts=>{
     let add=0; muts.forEach(m=>add+=m.addedNodes.length);
-    if(add) { maybeAutoEnable(); refresh(); }
+    if(add){ maybeAutoEnable(); refresh(); }
   });
   heavyMO.observe(document.documentElement,{childList:true,subtree:true});
   heavyAttached=true;
@@ -181,30 +179,86 @@ function detachHeavyObservers(){
   heavyAttached=false;
 }
 
-/* ---------- UI buttons -------------------------------------- */
+/* ---------- UI buttons & hover widget ----------------------- */
 function paintToggle(){ toggleBtnEl.style.background=enabled?"#21c55d":"#687076"; }
+
 function makeToggleBtn(){
-  const b=document.createElement("button");
-  b.textContent="Virtual DOM";
-  b.title="Toggle virtual-DOM. Great for long conversations to remove any lag (Detaches off-screen turns for speed)";
-  b.style.cssText="position:fixed;bottom:16px;right:31px;z-index:9999;" +
-      "padding:6px 12px;border-radius:6px;font:12px/1.2 sans-serif;" +
-      "background:#21c55d;color:#fff;border:none;cursor:pointer;" +
-      "box-shadow:0 2px 4px rgba(0,0,0,.2);opacity:.9;";
-  b.onclick=()=>{
-    const was=enabled;
-    enabled=!enabled;
-    chrome.storage.sync.set({[K_ENABLED]:enabled});
-    paintToggle();
-    if(!enabled){
-      detachHeavyObservers();
-      reviveAll(); clearVirtualState(); hide();
-    }else if(!was){
-      attachHeavyObservers(); refresh();
+  const b = document.createElement("button");
+  b.textContent = "Virtual DOM";
+  b.style.cssText = `
+    position:fixed;
+    bottom:16px;
+    right:31px;
+    z-index:9999;
+    padding:6px 12px;
+    border-radius:6px;
+    font:12px/1.2 sans-serif; 
+    color:#fff;
+    background:#21c55d; 
+    border:none;
+    cursor:pointer;
+    box-shadow:0 2px 4px rgba(0,0,0,.2);
+    opacity:.9;
+  `;
+  b.onclick = () => { /* ...toggle logic...*/ };
+  document.body.appendChild(b);
+  toggleBtnEl = b;
+  paintToggle();
+
+  let tip;
+  b.addEventListener("mouseenter", () => {
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.style.cssText = `
+        position:fixed;
+        padding:4px 8px;
+        font:12px sans-serif;
+        background:rgba(0,0,0,0.75);
+        color:#fff;
+        border-radius:4px;
+        white-space:nowrap;
+        pointer-events:none;
+        opacity:0;
+        transition:opacity .2s;
+        overflow-wrap:break-word;
+      `;
+      document.body.appendChild(tip);
     }
-  };
-  toggleBtnEl=b; paintToggle(); document.body.appendChild(b);
+
+    // set content and temporarily show offscreen so we can measure
+    const count = document.querySelectorAll(MSG_SEL).length;
+    tip.textContent = `Optimize for large conversations (${count} messages)`;
+    tip.style.left = '-9999px';
+    tip.style.top  = '-9999px';
+    tip.style.opacity = '0';
+
+    // force a reflow to pick up size
+    const { width: tipW, height: tipH } = tip.getBoundingClientRect();
+    const { top: bTop, left: bLeft, right: bRight, height: bH } = b.getBoundingClientRect();
+    const GAP = 8;
+
+    // try left of button
+    let x = bLeft - tipW - GAP;
+    // if not enough room on left, place on right
+    if (x < GAP) x = bRight + GAP;
+    // clamp horizontally
+    x = Math.min(window.innerWidth - tipW - GAP, Math.max(GAP, x));
+
+    // vertically center relative to button
+    let y = bTop + (bH - tipH) / 2;
+    // clamp vertically
+    y = Math.min(window.innerHeight - tipH - GAP, Math.max(GAP, y));
+
+    tip.style.left = `${x}px`;
+    tip.style.top  = `${y}px`;
+    tip.style.opacity = '1';
+  });
+
+  b.addEventListener("mouseleave", () => {
+    if (tip) tip.style.opacity = '0';
+  });
 }
+
 function makeSettingsBtn(){
   const s=document.createElement("button");
   s.textContent="⚙";
@@ -215,6 +269,7 @@ function makeSettingsBtn(){
      "box-shadow:0 2px 4px rgba(0,0,0,.2);";
   s.onclick=()=>chrome.runtime.sendMessage({cmd:"openOptions"});
   document.body.appendChild(s);
+  settingsBtnEl = s;
 }
 
 /* ---------- bootstrap --------------------------------------- */
@@ -224,28 +279,29 @@ function initWithPrefs(prefs){
 
   if(prefs[K_ENABLED]!==undefined && prefs[K_ENABLED]!==null){
     enabled = prefs[K_ENABLED];
-  }else{ enabled=false; }               // start disabled; auto may flip later
+  } else {
+    enabled=false;
+  }
 
   scroller=document.querySelector(SCROLL_SEL)||window;
 
-  addSpinner(); makeToggleBtn(); makeSettingsBtn();
+  addSpinner();
+  makeToggleBtn();
+  makeSettingsBtn();
 
-  /* lightweight MO always on to watch size for auto */
+  // watch count changes for auto-toggle
   const countWatcher=new MutationObserver(()=>maybeAutoEnable());
   countWatcher.observe(document.documentElement,{childList:true,subtree:true});
 
   if(enabled) attachHeavyObservers();
 
-  /* visibility / focus re-sync */
-  const onVis=()=>{ if(!document.hidden){ 
-    hide(); 
-    reviveAll(); 
-    if(enabled) refresh(); 
+  const onVis=()=>{ if(!document.hidden){
+    hide(); reviveAll(); if(enabled) refresh();
   }};
   document.addEventListener("visibilitychange",onVis);
   window.addEventListener("focus",onVis);
 
-  maybeAutoEnable(); // in case threshold already met on load
+  maybeAutoEnable();
   if(enabled) refresh();
   log("virtual DOM ready");
 }
@@ -256,6 +312,8 @@ function start(){
     initWithPrefs);
 }
 
-document.readyState==="complete" ? start() : window.addEventListener("load",start);
+document.readyState==="complete" 
+  ? start() 
+  : window.addEventListener("load",start);
 
 })();

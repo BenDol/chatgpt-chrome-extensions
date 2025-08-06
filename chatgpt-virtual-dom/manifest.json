@@ -12,6 +12,10 @@
       "run_at": "document_idle"
     }
   ],
+  "web_accessible_resources": [{
+    "resources": [ "content/virtual-scroll.js", "content/virtual-scroll.css" ],
+    "matches": [ "https://chatgpt.com/*", "https://chat.openai.com/*" ]
+  }],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": false
