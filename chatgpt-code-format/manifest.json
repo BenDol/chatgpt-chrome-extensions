@@ -1,0 +1,23 @@
+{
+  "name": "ChatGPT Code Format",
+  "description": "Detect language hints, tidy up your code blocks on chatgpt.com.",
+  "version": "1.0.1",
+  "manifest_version": 3,
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": [
+        "libs/highlight.min.js",
+        "content/format-code.js"
+      ],
+      "css": [
+        "libs/github-dark.min.css",
+        "content/format-code.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

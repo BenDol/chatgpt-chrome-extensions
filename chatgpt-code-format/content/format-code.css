@@ -1,0 +1,17 @@
+/* Scroll container on <pre> – extension-specific class  */
+.cgptcf-box {
+}
+
+/* Optional embellishment inside the box */
+code.hljs {
+  display: inline-block;
+  padding: 1rem 1.25rem;
+  line-height: 1.45;
+  background-color: #171717;
+  /*border-left: 4px solid #0b82ff33;*/
+}
+
+[dir] .cgptcf-box > code.hljs {
+  background:#1e1e1e; /* VS-Code-like dark background */
+  color:#d4d4d4; /* legible default foreground   */
+}

@@ -1,0 +1,16 @@
+/* Applied to every <pre> that holds a code block */
+.scrollable-code {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding-right: 0.05rem;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #2c2c2c;
+}
+
+/* Prevent line-wrap so long lines trigger x-scroll */
+.scrollable-code > code {
+  display: inline-block !important;
+  white-space: pre; /* keep lines intact – no wrapping */
+}

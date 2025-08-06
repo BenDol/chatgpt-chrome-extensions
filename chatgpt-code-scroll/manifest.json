@@ -1,0 +1,18 @@
+{
+  "name": "ChatGPT Scrollable Code Blocks",
+  "description": "Makes long <code> snippets on chatgpt.com scroll instead of overflowing the page.",
+  "version": "1.0.0",
+  "manifest_version": 3,
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": ["content/scrollable-code.js"],
+      "css": ["content/scrollable-code.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
