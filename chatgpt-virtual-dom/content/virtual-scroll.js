@@ -227,7 +227,7 @@ function makeToggleBtn(){
 
     // set content and temporarily show offscreen so we can measure
     const count = document.querySelectorAll(MSG_SEL).length;
-    tip.textContent = `Optimize for large conversations (${count} messages)`;
+    tip.textContent = `Optimize for large conversations: ${enabled ? "ON" : "OFF"} (${count} messages)`;
     tip.style.left = '-9999px';
     tip.style.top  = '-9999px';
     tip.style.opacity = '0';
