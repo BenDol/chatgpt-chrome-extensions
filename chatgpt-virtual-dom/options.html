@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ChatGPT - Virtual DOM Settings</title>
+  <style>
+    body { font: 14px/1.4 sans-serif; padding: 16px; width: 320px; }
+    label { display: block; margin-bottom: 8px; }
+    input[type="number"] { width: 5em; }
+    .row { margin-bottom: 14px; }
+    button { padding: 6px 12px; }
+    .note { font-size: 12px; opacity: .7; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Virtual DOM</h2>
+
+  <div class="row">
+    <label>
+      <input type="checkbox" id="auto">
+      Auto-enable Virtual DOM on long conversations
+    </label>
+  </div>
+
+  <div class="row">
+    <label>
+      Threshold (messages):
+      <input type="number" id="threshold" min="30" step="10">
+    </label>
+  </div>
+
+  <div class="row">
+    <label>
+      Default state:
+      <select id="enabled">
+        <option value="null">Automatic (based on auto-rules)</option>
+        <option value="true">Always ON</option>
+        <option value="false">Always OFF</option>
+      </select>
+    </label>
+  </div>
+
+  <button id="save">Save</button>
+  <span id="status" class="note"></span>
+
+  <script src="options.js"></script>
+</body>
+</html>

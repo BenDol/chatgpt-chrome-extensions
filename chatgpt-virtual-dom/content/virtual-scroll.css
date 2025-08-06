@@ -1,0 +1,4 @@
+/* subtle stub background so the scroll bar size is stable */
+div[data-placeholder-id] {
+  background: transparent;
+}

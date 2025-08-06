@@ -1,7 +1,7 @@
 {
   "name": "ChatGPT Code Format",
   "description": "Detect language hints, tidy up your code blocks on chatgpt.com.",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "manifest_version": 3,
   "content_scripts": [
     {

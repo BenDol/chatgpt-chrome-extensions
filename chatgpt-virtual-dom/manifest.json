@@ -1,0 +1,23 @@
+{
+  "name": "ChatGPT Virtual DOM",
+  "description": "Virtualises long conversations on chatgpt.com so the DOM never explodes.",
+  "version": "1.0.0",
+  "manifest_version": 3,
+
+  "content_scripts": [
+    {
+      "matches": [ "https://chatgpt.com/*", "https://chat.openai.com/*" ],
+      "js": [ "content/virtual-scroll.js" ],
+      "css": [ "content/virtual-scroll.css" ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [ "storage" ]
+}
