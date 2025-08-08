@@ -114,9 +114,7 @@ function maybeAutoEnable(msgCountOverride=null){
   if(total >= threshold){
     enabled = true;
     chrome.storage.sync.set({[K_ENABLED]: true});
-    paintToggle();
-    attachHeavyObservers();
-    refresh();
+    location.reload();
     log(`Auto-enabled after message count hit ${total}`);
   }
 }
@@ -200,7 +198,19 @@ function makeToggleBtn(){
     box-shadow:0 2px 4px rgba(0,0,0,.2);
     opacity:.9;
   `;
-  b.onclick = () => { /* ...toggle logic...*/ };
+  b.onclick = () => {
+    enabled = !enabled; // flip
+    chrome.storage.sync.set({[K_ENABLED]: enabled, [K_AUTO]: false});
+    if (enabled) {
+      attachHeavyObservers();
+      location.reload();
+    } else {
+      detachHeavyObservers();
+      clearVirtualState();
+      paintToggle();
+      refresh();
+    }
+  };
   document.body.appendChild(b);
   toggleBtnEl = b;
   paintToggle();
@@ -306,10 +316,14 @@ function initWithPrefs(prefs){
   log("virtual DOM ready");
 }
 
-function start(){
-  chrome.storage.sync.get(
-    {[K_ENABLED]:undefined,[K_AUTO]:DEF_AUTO,[K_THRESHOLD]:DEF_THRESHOLD},
-    initWithPrefs);
+async function start() {
+  const prefs = await chrome.storage.sync.get([K_ENABLED, K_AUTO, K_THRESHOLD]);
+  const settings = {
+    [K_ENABLED]: prefs[K_ENABLED] ?? false,        // use ??, not ||
+    [K_AUTO]: prefs[K_AUTO] ?? DEF_AUTO,
+    [K_THRESHOLD]: prefs[K_THRESHOLD] ?? DEF_THRESHOLD,
+  };
+  initWithPrefs(settings);
 }
 
 document.readyState==="complete" 
